@@ -28,6 +28,16 @@ FROM (
 ) a
 WHERE rnk = 1;
 
+Result:
+---------
+Management      Matthew 4500.00
+Production      Kevin   4000.00
+Sales   Sophia  4300.00
+Service Elvis   4100.00
+Time taken: 28.756 seconds, Fetched: 4 row(s)
+hive>
+
+
 Cumulative Distribution
 
 We can calculate the cumulative distribution of salaries among all departments. For example, salary 4000‘s cumulative distribution is 0.55, which means 55% people’s salaries are less or equal to 4000. To calculate this, we first count the frequencies of every salary, and do a cumulative summing:
@@ -43,6 +53,23 @@ FROM (
   GROUP BY salary
 ) a;
 
+Result:
+-------
+Total MapReduce CPU Time Spent: 15 seconds 840 msec
+OK
+3500.00 0.09090909090909091
+3600.00 0.18181818181818182
+3700.00 0.2727272727272727
+3800.00 0.36363636363636365
+4000.00 0.5454545454545454
+4100.00 0.7272727272727273
+4300.00 0.8181818181818182
+4400.00 0.9090909090909091
+4500.00 1.0
+Time taken: 58.564 seconds, Fetched: 9 row(s)
+hive>
+
+
 This can also be done with Hive’s CUME_DIST() window function. There’s another PERCENT_RANK() function, which computes the rank of the salary as percentage.
 
 SELECT
@@ -51,26 +78,24 @@ SELECT
   ,PERCENT_RANK() OVER (ORDER BY salary) AS pct_rank
 FROM t_employee;
 
-Clickstream Sessionization
+Result:
+-------
+Total MapReduce CPU Time Spent: 8 seconds 190 msec
+OK
+3500.00 0.09090909090909091     0.0
+3600.00 0.18181818181818182     0.1
+3700.00 0.2727272727272727      0.2
+3800.00 0.36363636363636365     0.3
+4000.00 0.5454545454545454      0.4
+4000.00 0.5454545454545454      0.4
+4100.00 0.7272727272727273      0.6
+4100.00 0.7272727272727273      0.6
+4300.00 0.8181818181818182      0.8
+4400.00 0.9090909090909091      0.9
+4500.00 1.0     1.0
+Time taken: 29.137 seconds, Fetched: 11 row(s)
+hive>
 
-We can divide click events into different sessions by setting a timeout, in this case 30 minutes, and assign an id to each session:
-
-First, in subquery b, we use the LAG(col) function to calculate the time difference between current row and previous row, and if it’s more than 30 minutes, a new session is marked. Then we do a cumulative sum of the new_session field so that each session will get an incremental sequence.
-
-SELECT
-  ipaddress, clicktime
-  ,SUM(IF(new_session, 1, 0)) OVER x + 1 AS sessionid
-FROM (
-  SELECT
-    ipaddress, clicktime, ts
-    ,ts - LAG(ts) OVER w > 1800 AS new_session
-  FROM (
-    SELECT *, UNIX_TIMESTAMP(clicktime) AS ts
-    FROM t_clickstream
-  ) a
-  WINDOW w AS (PARTITION BY ipaddress ORDER BY ts)
-) b
-WINDOW x AS (PARTITION BY ipaddress ORDER BY ts);
 
 For Details refer:
 http://shzhangji.com/blog/2017/09/04/hive-window-and-analytical-functions/
