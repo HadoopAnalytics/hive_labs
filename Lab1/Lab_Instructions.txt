@@ -1,1 +1,58 @@
+#Create employee1 table
+
+CREATE TABLE employee1 (
+id INT,
+name STRING,
+salary BIGINT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH ‘employee1.txt' INTO TABLE employee1;
+
+
+#Create employee2 table
+
+CREATE TABLE employee2 (
+id INT,
+name STRING,
+salary BIGINT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH ‘employee2.txt' INTO TABLE employee2;
+
+#Verify tabel through Commands
+
+show tables;
+
+describe employee1:
+
+describe employee2;
+
+select * from employee1;
+
+select * from employee2;
+
+#full outer join of two tables.
+
+select 
+case when b1.cdc_codes = 'Updates' then b1.employee1s
+ when b1.cdc_codes = 'NoChange' then b1.employee2s
+ when b1.cdc_codes = 'New' then b1.employee2s
+ when b1.cdc_codes = 'Deletes' then b1.employee1s
+else 'Error' end as fin_cols
+from (select case when e1.id = e2.id and concat(e1.name,e1.salary) = concat(e2.name,e2.salary)     then  'NoChange'
+when e1.id = e2.id and  concat(e1.name,e1.salary) <> concat(e2.name,e2.salary) then  'Updates'
+when e1.id is null then 'New'
+when e2.id is null then 'Deletes'
+else 'Error' end as cdc_codes,
+concat(e1.id,',',e1.name,',',e1.salary) as employee1s,
+concat(e2.id,',',e2.name,',',e2.salary) as employee2s
+from employee1 as e1 full outer join employee2 as e2
+on e1.id = e2.id) as b1
+
 
